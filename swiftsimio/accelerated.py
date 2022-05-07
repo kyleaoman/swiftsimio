@@ -118,6 +118,14 @@ def read_ranges_from_file_unchunked(
     array: np.ndarray
         Result from reading only the relevant values from ``handle``.
     """
+    if not isinstance(columns, slice):
+        # bug in python3.6 + h5py >= 3.0.0 means we should *always* read a slice
+        squeeze_result = True
+        # columns is an int, make it a slice
+        columns = np.s_[columns:columns + 1]
+        output_shape = output_shape + (1, )
+    else:
+        squeeze_result = False
 
     output = np.empty(output_shape, dtype=output_type)
     already_read = 0
@@ -139,10 +147,15 @@ def read_ranges_from_file_unchunked(
         )
 
         output_dest_sel = np.s_[already_read : size_of_range + already_read]
+        if squeeze_result:
+            output_dest_sel = np.s_[output_dest_sel, 0:1]
 
         handle.read_direct(output, source_sel=hdf5_read_sel, dest_sel=output_dest_sel)
 
         already_read += size_of_range
+
+    if squeeze_result:
+        output = output.squeeze(axis=1)  # inplace
 
     if not output.dtype.isnative:
         # The data type we have read in is the opposite endian-ness to the
@@ -177,11 +190,11 @@ def index_dataset(handle: Dataset, mask_array: np.array) -> np.array:
     """
 
     output_type = handle[0].dtype
-    output_size = mask_array.size
+    output_shape = (mask_array.size, )
 
     ranges = ranges_from_array(mask_array)
 
-    return read_ranges_from_file(handle, ranges, output_size, output_type)
+    return read_ranges_from_file(handle, ranges, output_shape, output_type)
 
 
 @jit(nopython=True, fastmath=True)

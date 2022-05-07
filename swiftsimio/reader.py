@@ -1110,7 +1110,7 @@ def generate_getter(
                         if output_size != 1 and not use_columns:
                             output_shape = (mask_size, output_size)
                         else:
-                            output_shape = mask_size
+                            output_shape = (mask_size, )
 
                         setattr(
                             self,

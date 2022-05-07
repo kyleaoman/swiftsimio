@@ -269,7 +269,7 @@ def write_datasubset(
             if output_size != 1:
                 output_shape = (mask_size, output_size)
             else:
-                output_shape = mask_size
+                output_shape = (mask_size, )
 
             dataset_mask = get_dataset_mask(mask, name)
 
